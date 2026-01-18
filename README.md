@@ -13,35 +13,40 @@ This project implements a LangGraph-based agent with Opik tracing integration. T
 - **Question Classification**: Automatically classifies input questions
 - **Modular Handlers**: Separate nodes for greeting and search operations
 
-## Setup
+# Project Setup & Management with uv
 
-This project uses [uv](https://docs.astral.sh/uv/) for fast Python package management.
+## 1. Installation
 
-1. Install uv (if not already installed):
+macOS / Linux
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
 ```
+Windows
+```bash
+powershell -c "irm [https://astral.sh/uv/install.ps1](https://astral.sh/uv/install.ps1) | iex"
+```
+## Setting up
 
-2. Create a virtual environment and install dependencies:
 ```bash
 uv sync
 ```
+## Adding/Removing a package
 
-This will create a `.venv` directory and install all dependencies from `pyproject.toml` using the lockfile (`uv.lock`).
-
-3. Activate the virtual environment:
 ```bash
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv add <package_name>
+uv remove <package_name>
 ```
 
-## Usage
-
-Run the agent:
+## Add a dev dependency:
 ```bash
-python app.py
+uv add --dev <package_name>
 ```
 
-The agent will process the example question "Hello, how are you?" and return a response.
+## Running the agent:
+```bash
+uv run app.py
+```
+
 
 ## Architecture
 
