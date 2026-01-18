@@ -15,15 +15,23 @@ This project implements a LangGraph-based agent with Opik tracing integration. T
 
 ## Setup
 
-1. Create a virtual environment:
+This project uses [uv](https://docs.astral.sh/uv/) for fast Python package management.
+
+1. Install uv (if not already installed):
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-2. Install dependencies:
+2. Create a virtual environment and install dependencies:
 ```bash
-pip install -r requirements.txt
+uv sync
+```
+
+This will create a `.venv` directory and install all dependencies from `pyproject.toml` using the lockfile (`uv.lock`).
+
+3. Activate the virtual environment:
+```bash
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 ## Usage
