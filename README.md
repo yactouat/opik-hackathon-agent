@@ -55,10 +55,70 @@ The workflow consists of:
 - **Conditional Routing**: Routes to either `handle_greeting` or `handle_search` based on classification
 - **Opik Tracer**: Tracks the entire execution graph for observability
 
+## Running the Interaction Extraction Script
+
+The `graphs/extract_interaction_with_a_person_card.py` script uses Google's Gemini AI to extract structured information about a person interaction from free-form text.
+
+### What the Script Does
+
+Given a text describing an interaction with someone, the script extracts:
+- **who**: The name of the person you interacted with
+- **where**: Where the interaction took place
+- **shared_interests**: Topics or interests you discussed
+- **was_stimulating**: Whether the conversation was particularly engaging
+- **why_took_place**: The reason for the interaction
+- **additional_tags**: Other relevant descriptors
+
+### Setup
+
+1. **Get a Google AI Studio API Key**
+   - Go to [Google AI Studio](https://aistudio.google.com/)
+   - Sign in with your Google account
+   - Click on "Get API Key" in the left sidebar
+   - Create a new API key or use an existing one
+   - Copy the key
+
+2. **Configure Environment Variables**
+   - Copy the example environment file:
+     ```bash
+     cp .env.example .env
+     ```
+   - Open `.env` and add your Google API key:
+     ```
+     GOOGLE_API_KEY=your_api_key_here
+     ```
+
+3. **Run the Script**
+   ```bash
+   uv run python graphs/extract_interaction_with_a_person_card.py
+   ```
+
+### Example
+
+The script includes a sample input:
+> "I met John at the coffee shop yesterday. We talked about AI and machine learning for hours. It was a really stimulating conversation!"
+
+This would extract:
+```python
+{
+    'input': 'I met John at the coffee shop yesterday. We talked about AI and machine learning for hours. It was a really stimulating conversation!', 'interaction_card': InteractionWithAPersonCard(
+        additional_tags=['AI', 'machine learning', 'coffee shop'], 
+        shared_interests=['AI', 'machine learning'], 
+        was_stimulating=True, 
+        where='the coffee shop', 
+        when='yesterday', 
+        who='John'
+    )
+}
+```
+
+The execution is traced with Opik, so you can view the full graph execution in your Opik dashboard.
+
 ## Dependencies
 
 - `fastapi` - Web framework for building APIs
 - `langchain` - Core LangChain functionality
+- `langchain-google-genai` - Google Gemini integration for LangChain
 - `langgraph` - Graph-based workflow orchestration
 - `opik` - Observability and tracing platform
 - `uvicorn` - ASGI server for running FastAPI
