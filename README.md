@@ -4,7 +4,7 @@ The agentic layer of our Commit To Change 2026 hackathon project.
 
 ## Overview
 
-This project implements a LangGraph-based agent with Opik tracing integration. The agent classifies user questions and routes them to appropriate handlers (greeting or search).
+This project scaffolds a LangGraph-based agent with Opik tracing integration. The agent classifies user questions and routes them to appropriate handlers (greeting or search).
 
 ## Features
 
@@ -42,9 +42,9 @@ uv remove <package_name>
 uv add --dev <package_name>
 ```
 
-## Running the agent:
+## Running the API:
 ```bash
-uv run app.py
+uv run uvicorn app:app --reload
 ```
 
 
@@ -57,6 +57,8 @@ The workflow consists of:
 
 ## Dependencies
 
+- `fastapi` - Web framework for building APIs
 - `langchain` - Core LangChain functionality
 - `langgraph` - Graph-based workflow orchestration
 - `opik` - Observability and tracing platform
+- `uvicorn` - ASGI server for running FastAPI

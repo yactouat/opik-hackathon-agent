@@ -5,7 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi",
     "langchain>=1.2.6",
     "langgraph>=1.0.6",
     "opik>=1.9.87",
+    "pydantic>=2.12.5",
+    "uvicorn",
 ]
