@@ -70,6 +70,24 @@ uv add --dev <package_name>
 uv run uvicorn app:app --reload
 ```
 
+## Exposing the API with ngrok
+
+To expose your local API to the internet (necessary to run [the mobile app](https://github.com/WissamElJ/opik-hackathon-mobile)), use `ngrok`.
+
+1. **Install ngrok**: Follow the instructions at [ngrok.com/download](https://ngrok.com/download).
+
+2. **Start the API**: Ensure your API is running locally:
+   ```bash
+   uv run uvicorn app:app --reload
+   ```
+
+3. **Expose the port**: In a separate terminal, run:
+   ```bash
+   ngrok http 8000
+   ```
+
+4. **Use the URL**: ngrok will generate a public URL (e.g., `https://<random-id>.ngrok-free.app`) that forwards traffic to your localhost:8000. You can use this URL to access your API endpoints externally.
+
 
 ## Architecture
 
