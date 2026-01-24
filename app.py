@@ -6,10 +6,13 @@ from typing import Any
 
 import asyncpg
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, status
 from pydantic import BaseModel
 
 from database.migrations import MIGRATIONS
+from services.dtos.UpdateUserPayload import UpdateUserPayload
+from services.UserService import UserService
+from services.HealthService import HealthService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,9 +44,9 @@ async def lifespan(app: FastAPI):
             app.state.pool = pool
             
             # Run basic query to verify connection
-            async with pool.acquire() as conn:
-                current_date = await conn.fetchval("SELECT CURRENT_DATE")
-                logger.info(f"Successfully connected to database! Current date: {current_date}")
+            health_service = HealthService(pool)
+            current_date = await health_service.check_db_connection()
+            logger.info(f"Successfully connected to database! Current date: {current_date}")
             
             # Run migrations
             for migration in MIGRATIONS:
@@ -83,3 +86,18 @@ def root(request: Request) -> APIResponse:
             }
         }
     )
+
+
+@app.post("/users", response_model=APIResponse)
+async def create_or_update_user(payload: UpdateUserPayload, request: Request) -> APIResponse:
+    pool = getattr(request.app.state, "pool", None)
+    if not pool:
+         raise HTTPException(
+             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
+             detail="Database not available"
+         )
+    
+    user_service = UserService(pool)
+    msg = await user_service.process_user_payload(payload)
+    
+    return APIResponse(msg=msg)

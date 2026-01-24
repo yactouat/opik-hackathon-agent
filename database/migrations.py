@@ -85,7 +85,24 @@ async def add_unique_id_column(pool: asyncpg.Pool):
         logger.error(f"Error adding unique_id column: {e}")
         raise e
 
+async def make_email_unique(pool: asyncpg.Pool):
+    """
+    Ensures that the email column in the users table is unique.
+    """
+    query = """
+    CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (email);
+    """
+    
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute(query)
+            logger.info("Ensured unique index on email column.")
+    except Exception as e:
+        logger.error(f"Error making email unique: {e}")
+        raise e
+
 MIGRATIONS = [
     migrate_users_table,
     add_unique_id_column,
+    make_email_unique,
 ]
