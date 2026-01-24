@@ -207,6 +207,62 @@ This will extract and store:
 - why: "talked about AI and machine learning"
 - how: "met at the coffee shop, conversation"
 
+## Testing the `/interactions` Endpoint
+
+You can test the `/interactions` endpoint without a mobile app using the provided test scripts in the `tests` folder.
+
+### Step 1: Seed Test Users
+
+First, create dummy test users with hardcoded `unique_id` values:
+
+```bash
+uv run python tests/seed_test_users.py
+```
+
+This will create two test users:
+- **Test User 1**: `unique_id: test-user-1-uuid`, email: `test.user1@example.com`
+- **Test User 2**: `unique_id: test-user-2-uuid`, email: `test.user2@example.com`
+
+The script is idempotent - you can run it multiple times safely. If the users already exist, it will skip creation.
+
+### Step 2: Run the Interaction Test
+
+With the API running and test users seeded, test the endpoint:
+
+```bash
+uv run python tests/test_interactions.py
+```
+
+This script will:
+1. Check that the API and database are connected
+2. Send a sample interaction from Test User 1 about Test User 2
+3. Display the response and status
+4. Process the interaction using the LangGraph + Gemini AI pipeline
+5. Store the extracted "5 Ws" in the database
+
+### Manual Testing with curl
+
+You can also manually test with the hardcoded user IDs:
+
+```bash
+curl -X POST http://localhost:8000/interactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "I met Test User Two at the park this morning. We discussed the weather and planned a weekend hike.",
+    "user_id": "test-user-1-uuid",
+    "target_user_id": "test-user-2-uuid",
+    "sub": "test-user-1-uuid"
+  }'
+```
+
+### Verifying Stored Interactions
+
+To verify interactions were stored in the database:
+
+```bash
+docker exec -it opik-hackathon-agent-postgres-1 psql -U postgres -d app -c "SELECT * FROM interactions ORDER BY created_at DESC LIMIT 5;"
+```
+
 ## Architecture
 
 The workflow consists of:
