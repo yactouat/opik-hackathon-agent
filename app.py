@@ -11,7 +11,9 @@ from pydantic import BaseModel
 
 from database.migrations import MIGRATIONS
 from services.dtos.UpdateUserPayload import UpdateUserPayload
+from services.dtos.UpdateInteractionPayload import UpdateInteractionPayload
 from services.UserService import UserService
+from services.InteractionService import InteractionService
 from services.HealthService import HealthService
 
 # Configure logging
@@ -31,7 +33,7 @@ async def lifespan(app: FastAPI):
     # Connect to database on startup with retries
     max_retries = 5
     base_delay = 2
-    
+
     for attempt in range(max_retries):
         try:
             pool = await asyncpg.create_pool(
@@ -42,26 +44,32 @@ async def lifespan(app: FastAPI):
                 port=os.getenv("POSTGRES_PORT", "5432"),
             )
             app.state.pool = pool
-            
+
             # Run basic query to verify connection
             health_service = HealthService(pool)
             current_date = await health_service.check_db_connection()
-            logger.info(f"Successfully connected to database! Current date: {current_date}")
-            
+            logger.info(
+                f"Successfully connected to database! Current date: {current_date}"
+            )
+
             # Run migrations
             for migration in MIGRATIONS:
                 await migration(pool)
-                
+
             # If we get here, connection and migrations were successful
             break
-            
+
         except Exception as e:
             if attempt < max_retries - 1:
-                delay = base_delay * (2 ** attempt)
-                logger.warning(f"Failed to connect to database (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {delay}s...")
+                delay = base_delay * (2**attempt)
+                logger.warning(
+                    f"Failed to connect to database (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {delay}s..."
+                )
                 await asyncio.sleep(delay)
             else:
-                logger.error(f"Final failure connecting to database after {max_retries} attempts: {e}")
+                logger.error(
+                    f"Final failure connecting to database after {max_retries} attempts: {e}"
+                )
                 # We don't block startup, but DB features won't work
                 app.state.pool = None
 
@@ -79,25 +87,39 @@ app = FastAPI(lifespan=lifespan)
 def root(request: Request) -> APIResponse:
     db_connected = getattr(request.app.state, "pool", None) is not None
     return APIResponse(
-        msg="Paramis API is up and running",
-        data={
-            "status": {
-                "database": db_connected
-            }
-        }
+        msg="Paramis API is up and running", data={"status": {"database": db_connected}}
     )
 
 
 @app.post("/users", response_model=APIResponse)
-async def create_or_update_user(payload: UpdateUserPayload, request: Request) -> APIResponse:
+async def create_or_update_user(
+    payload: UpdateUserPayload, request: Request
+) -> APIResponse:
     pool = getattr(request.app.state, "pool", None)
     if not pool:
-         raise HTTPException(
-             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
-             detail="Database not available"
-         )
-    
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database not available",
+        )
+
     user_service = UserService(pool)
     msg = await user_service.process_user_payload(payload)
-    
+
+    return APIResponse(msg=msg)
+
+
+@app.post("/interactions", response_model=APIResponse)
+async def create_interaction(
+    payload: UpdateInteractionPayload, request: Request
+) -> APIResponse:
+    pool = getattr(request.app.state, "pool", None)
+    if not pool:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database not available",
+        )
+
+    interaction_service = InteractionService(pool)
+    msg = await interaction_service.create_interaction(payload)
+
     return APIResponse(msg=msg)

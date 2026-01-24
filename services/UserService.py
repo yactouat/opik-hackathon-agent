@@ -9,6 +9,18 @@ class UserService:
     def __init__(self, pool: asyncpg.Pool):
         self.pool = pool
 
+    @staticmethod
+    def validate_authorization(token_sub: str, expected_id: str, error_detail: str) -> None:
+        """
+        Validates that the token subject matches the expected user ID.
+        Raises HTTPException 401 if they don't match.
+        """
+        if token_sub != expected_id:
+             raise HTTPException(
+                 status_code=status.HTTP_401_UNAUTHORIZED,
+                 detail=error_detail
+             )
+
     async def process_user_payload(self, payload: UpdateUserPayload) -> str:
         """
         Process a user update payload: create user if not exists, update if exists and changed.
@@ -30,11 +42,7 @@ class UserService:
                 db_unique_id = existing_user['unique_id']
                 
                 # DO NOT allow updates if the unique id present in the payload does not match the unique id present in DB
-                if db_unique_id != payload.sub:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED, 
-                        detail=ERROR_PROCESSING_USER
-                    )
+                UserService.validate_authorization(payload.sub, db_unique_id, ERROR_PROCESSING_USER)
                 
                 # Update only the fields that have changed BUT NEVER UPDATE unique id
                 # We assume email is the key, so we don't update it.
