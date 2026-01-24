@@ -84,13 +84,12 @@ The `graphs/extract_interaction_with_a_person_card.py` script uses Google's Gemi
 
 ### What the Script Does
 
-Given a text describing an interaction with someone, the script extracts:
-- **who**: The name of the person you interacted with
+Given a text describing an interaction with someone, the script extracts the "5 Whys" (Who, Where, When, Why, How):
+- **who**: The name of the person with whom the interaction took place
 - **where**: Where the interaction took place
-- **shared_interests**: Topics or interests you discussed
-- **was_stimulating**: Whether the conversation was particularly engaging
-- **why_took_place**: The reason for the interaction
-- **additional_tags**: Other relevant descriptors
+- **when**: When the interaction took place
+- **why**: Why the interaction took place (the reason/purpose)
+- **how**: How the interaction took place (the context/manner)
 
 ### Setup
 
@@ -125,12 +124,11 @@ This would extract:
 ```python
 {
     'input': 'I met John at the coffee shop yesterday. We talked about AI and machine learning for hours. It was a really stimulating conversation!', 'interaction_card': InteractionWithAPersonCard(
-        additional_tags=['AI', 'machine learning', 'coffee shop'], 
-        shared_interests=['AI', 'machine learning'], 
-        was_stimulating=True, 
-        where='the coffee shop', 
-        when='yesterday', 
-        who='John'
+        who='John',
+        where='the coffee shop',
+        when='yesterday',
+        why='talked about AI and machine learning',
+        how='met at the coffee shop, conversation'
     )
 }
 ```

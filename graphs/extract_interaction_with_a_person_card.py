@@ -33,7 +33,7 @@ def extract_interaction_node(state):
     
     structured_llm = llm.with_structured_output(InteractionWithAPersonCard)
     
-    prompt = f"""Extract information about an interaction with a person from the following text.
+    prompt = f"""Extract information about an interaction with a person from the following text, following the 5 Whys framework (Who, Where, When, Why, How).
 
 Text:
 {input}
