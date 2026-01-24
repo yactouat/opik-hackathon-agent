@@ -30,6 +30,29 @@ powershell -c "irm [https://astral.sh/uv/install.ps1](https://astral.sh/uv/insta
 ```bash
 uv sync
 ```
+
+## Database Setup
+
+1. **Start the Database**
+   This project uses PostgreSQL 17 (LTS). Start the database service:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Configure Environment Variables**
+   Copy the example environment file and configure it:
+   ```bash
+   cp env.example .env
+   ```
+   The `.env` file should include your database credentials:
+   ```
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=postgres
+   POSTGRES_DB=app
+   POSTGRES_HOST=localhost
+   POSTGRES_PORT=5432
+   ```
+
 ## Adding/Removing a package
 
 ```bash
@@ -81,7 +104,7 @@ Given a text describing an interaction with someone, the script extracts:
 2. **Configure Environment Variables**
    - Copy the example environment file:
      ```bash
-     cp .env.example .env
+     cp env.example .env
      ```
    - Open `.env` and add your Google API key:
      ```
@@ -116,6 +139,7 @@ The execution is traced with Opik, so you can view the full graph execution in y
 
 ## Dependencies
 
+- `asyncpg` - Async PostgreSQL driver (no ORM)
 - `fastapi` - Web framework for building APIs
 - `langchain` - Core LangChain functionality
 - `langchain-google-genai` - Google Gemini integration for LangChain
