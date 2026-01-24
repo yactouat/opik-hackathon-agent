@@ -89,6 +89,124 @@ To expose your local API to the internet (necessary to run [the mobile app](http
 4. **Use the URL**: ngrok will generate a public URL (e.g., `https://<random-id>.ngrok-free.app`) that forwards traffic to your localhost:8000. You can use this URL to access your API endpoints externally.
 
 
+## API Endpoints
+
+The API provides the following endpoints:
+
+### GET /
+
+**Health check endpoint**
+
+Returns the API status and database connection state.
+
+**Response:**
+```json
+{
+  "msg": "Paramis API is up and running",
+  "data": {
+    "status": {
+      "database": true
+    }
+  }
+}
+```
+
+### POST /users
+
+**Create or update a user**
+
+Creates a new user if they don't exist (based on email), or updates an existing user's information. Authorization is validated via the `sub` field.
+
+**Request Payload:**
+```json
+{
+  "city": "string",
+  "email": "string",
+  "full_name": "string",
+  "sub": "string (UUID - subject identifier for authorization)"
+}
+```
+
+**Behavior:**
+- If user with email doesn't exist: creates new user with `sub` as `unique_id`
+- If user exists: updates `full_name` and `city` only if they've changed
+- Authorization: `sub` must match the existing user's `unique_id` for updates
+- Email serves as the unique identifier for lookup
+
+**Response:**
+```json
+{
+  "msg": "User payload processed successfully | User updated | User already up to date"
+}
+```
+
+**Status Codes:**
+- `200`: Success
+- `401`: Unauthorized (sub doesn't match existing user's unique_id)
+- `503`: Database not available
+
+### POST /interactions
+
+**Record an interaction between users**
+
+Processes a free-form text description of an interaction and extracts structured information using AI (the 5 Ws: Who, Where, When, Why, How), then stores it in the database.
+
+**Request Payload:**
+```json
+{
+  "input": "string (free-form text describing the interaction)",
+  "user_id": "string (unique_id of the user recording the interaction)",
+  "target_user_id": "string (unique_id of the user with whom the interaction occurred)",
+  "sub": "string (UUID for authorization - must match user_id)"
+}
+```
+
+**Behavior:**
+- Validates that `sub` matches `user_id` (requester must be the recorder)
+- Looks up both users by their `unique_id` values
+- Processes the `input` text using LangGraph + Gemini AI to extract:
+  - **who**: Name of the person
+  - **where**: Location of the interaction
+  - **when**: Time/date of the interaction
+  - **why**: Reason/purpose of the interaction
+  - **how**: Context/manner of the interaction
+- Stores the extracted information in the `interactions` table
+- Execution is traced with Opik for observability
+
+**Response:**
+```json
+{
+  "msg": "Interaction recorded successfully"
+}
+```
+
+**Status Codes:**
+- `200`: Success
+- `400`: Interaction content could not be processed
+- `401`: Unauthorized (sub doesn't match user_id)
+- `404`: User or target user not found
+- `500`: Internal server error during processing
+- `503`: Database not available
+
+**Example:**
+```bash
+curl -X POST http://localhost:8000/interactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "I met John at the coffee shop yesterday. We talked about AI and machine learning for hours.",
+    "user_id": "user-uuid-123",
+    "target_user_id": "john-uuid-456",
+    "sub": "user-uuid-123"
+  }'
+```
+
+This will extract and store:
+- who: "John"
+- where: "the coffee shop"
+- when: "yesterday"
+- why: "talked about AI and machine learning"
+- how: "met at the coffee shop, conversation"
+
 ## Architecture
 
 The workflow consists of:
