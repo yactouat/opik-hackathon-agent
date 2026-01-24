@@ -1,5 +1,6 @@
 import logging
 import os
+import asyncio
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -8,7 +9,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 
-from database.migrations import migrate_users_table
+from database.migrations import MIGRATIONS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,29 +25,42 @@ class APIResponse(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Connect to database on startup
-    try:
-        pool = await asyncpg.create_pool(
-            user=os.getenv("POSTGRES_USER", "postgres"),
-            password=os.getenv("POSTGRES_PASSWORD", "postgres"),
-            database=os.getenv("POSTGRES_DB", "app"),
-            host=os.getenv("POSTGRES_HOST", "localhost"),
-            port=os.getenv("POSTGRES_PORT", "5432"),
-        )
-        app.state.pool = pool
-        
-        # Run basic query to verify connection
-        async with pool.acquire() as conn:
-            current_date = await conn.fetchval("SELECT CURRENT_DATE")
-            logger.info(f"Successfully connected to database! Current date: {current_date}")
-        
-        # Run migrations
-        await migrate_users_table(pool)
+    # Connect to database on startup with retries
+    max_retries = 5
+    base_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            pool = await asyncpg.create_pool(
+                user=os.getenv("POSTGRES_USER", "postgres"),
+                password=os.getenv("POSTGRES_PASSWORD", "postgres"),
+                database=os.getenv("POSTGRES_DB", "app"),
+                host=os.getenv("POSTGRES_HOST", "localhost"),
+                port=os.getenv("POSTGRES_PORT", "5432"),
+            )
+            app.state.pool = pool
             
-    except Exception as e:
-        logger.error(f"Failed to connect to database: {e}")
-        # We don't block startup, but DB features won't work
-        app.state.pool = None
+            # Run basic query to verify connection
+            async with pool.acquire() as conn:
+                current_date = await conn.fetchval("SELECT CURRENT_DATE")
+                logger.info(f"Successfully connected to database! Current date: {current_date}")
+            
+            # Run migrations
+            for migration in MIGRATIONS:
+                await migration(pool)
+                
+            # If we get here, connection and migrations were successful
+            break
+            
+        except Exception as e:
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                logger.warning(f"Failed to connect to database (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {delay}s...")
+                await asyncio.sleep(delay)
+            else:
+                logger.error(f"Final failure connecting to database after {max_retries} attempts: {e}")
+                # We don't block startup, but DB features won't work
+                app.state.pool = None
 
     yield
 

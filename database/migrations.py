@@ -45,3 +45,47 @@ async def migrate_users_table(pool: asyncpg.Pool):
     except Exception as e:
         logger.error(f"Error migrating users table: {e}")
         raise e
+
+async def add_unique_id_column(pool: asyncpg.Pool):
+    """
+    Adds unique_id column to users table if it doesn't exist and ensures it is unique.
+    """
+    check_column_query = """
+    SELECT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users' 
+        AND column_name = 'unique_id'
+    );
+    """
+    
+    alter_table_query = """
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS unique_id TEXT;
+    """
+
+    add_unique_index_query = """
+    CREATE UNIQUE INDEX IF NOT EXISTS users_unique_id_idx ON users (unique_id);
+    """
+    
+    try:
+        async with pool.acquire() as conn:
+            column_exists = await conn.fetchval(check_column_query)
+            
+            if not column_exists:
+                await conn.execute(alter_table_query)
+                logger.info("Added unique_id column to users table.")
+            else:
+                logger.info("unique_id column already exists in users table, skipping add column.")
+            
+            # Always try to ensure uniqueness
+            await conn.execute(add_unique_index_query)
+            logger.info("Ensured unique index on unique_id column.")
+                
+    except Exception as e:
+        logger.error(f"Error adding unique_id column: {e}")
+        raise e
+
+MIGRATIONS = [
+    migrate_users_table,
+    add_unique_id_column,
+]
